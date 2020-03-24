@@ -5,7 +5,7 @@
 
 namespace patterns {
     // Не интересные для пользователя детали реализации.
-    namespace util {
+    namespace detail {
         template<typename R>
         class BasicVisitor {
         public:
@@ -40,8 +40,8 @@ namespace patterns {
     // класс свойтв, а следующими аргументами все типы, которые вы будете посещать
     template<typename TraitsT, typename... Types>
     class BaseVisitor :
-            public util::BasicVisitor<typename TraitsT::ReturnType>,
-            public util::VisitorImpl<Types, typename TraitsT::ReturnType> ... {
+            public detail::BasicVisitor<typename TraitsT::ReturnType>,
+            public detail::VisitorImpl<Types, typename TraitsT::ReturnType> ... {
     };
 
     // Наследуйте свой базовый посещаемый тип от этого класса, передавая теже свойста, что и
@@ -68,17 +68,17 @@ namespace patterns {
 
         BaseVisitable &operator=(BaseVisitable &&) = delete;
 
-        virtual ReturnType accept(util::BasicVisitor<ReturnType> &visitor) = 0;
+        virtual ReturnType accept(detail::BasicVisitor<ReturnType> &visitor) = 0;
 
     protected:
         template<typename T, typename PT>
         static ReturnType
-        acceptImpl(T &visited, util::BasicVisitor<ReturnType> &visitor, PT const &predicate) {
-            if (auto p = dynamic_cast<patterns::util::VisitorImpl<T, ReturnType> *>(&visitor)) {
+        acceptImpl(T &visited, detail::BasicVisitor<ReturnType> &visitor, PT const &predicate) {
+            if (auto p = dynamic_cast<patterns::detail::VisitorImpl<T, ReturnType> *>(&visitor)) {
                 return predicate(p, visitor);
             }
             if (auto p =
-                    dynamic_cast<patterns::util::VisitorImpl<CatchType, ReturnType> *>(&visitor)) {
+                    dynamic_cast<patterns::detail::VisitorImpl<CatchType, ReturnType> *>(&visitor)) {
                 return predicate(p, visitor);
             }
             return visitor.catchInvalid();
@@ -138,10 +138,10 @@ namespace patterns {
 // pvisitor->visit(*this) посещает самого себя.
 // mLhs->accept(visitor) переадрисует посещение дочерним объектам
 //
-// НЕ ЗАБУДЬТЕ ВЕРНУТЬ ЗНАЧЕНИЕ, ЕСЛИ ТИП ВОЗВРАЩАЕМОГО  ЗНАЧЕНЯИ ОТЛИЧЕН ОТ void !!!
+// НЕ ЗАБУДЬТЕ ВЕРНУТЬ ЗНАЧЕНИЕ, ЕСЛИ ТИП ВОЗВРАЩАЕМОГО  ЗНАЧЕНИЯ ОТЛИЧЕН ОТ void !!!
 //
 #define MAKE_VISITABLE_CUSTOM(...) \
-    virtual ReturnType accept(patterns::util::BasicVisitor<ReturnType>& visitor) override \
+    virtual ReturnType accept(patterns::detail::BasicVisitor<ReturnType>& visitor) override \
     { return acceptImpl(*this, visitor, [this](auto* pvisitor, auto& visitor) __VA_ARGS__ ); }
 
 // Стандартная реализация MAKE_VISITABLE_CUSTOM для посещения самого себя.
