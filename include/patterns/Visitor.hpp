@@ -119,8 +119,8 @@ namespace patterns {
 
     // Стандартные BaseVisitor и BaseVisitable;
 
-    using Visitor = BaseVisitor<VisitorTraits<void>>;
-    using Visitable = BaseVisitor<VisitorTraits<void>>;
+    template<typename... Types> using Visitor = BaseVisitor<VisitorTraits<void>, Types...>;
+    using Visitable = BaseVisitable<VisitorTraits<void>>;
 }
 
 // Используется для кастомной настройки вызова функции accept

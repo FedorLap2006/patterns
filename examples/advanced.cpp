@@ -1,6 +1,7 @@
 #include <patterns/Visitor.hpp>
 #include <memory>
-#include <gtest/gtest.h>
+#include <vector>
+#include <iostream>
 
 using namespace std;
 using namespace patterns;
@@ -22,6 +23,7 @@ public:
     MAKE_VISITABLE()
 
     int number() const override {
+        cout << "A am NodeA. My number is " << nodeANumber << endl;
         return nodeANumber;
     }
 };
@@ -31,12 +33,14 @@ public:
     MAKE_VISITABLE()
 
     int number() const override {
+        cout << "A am NodeB. My number is " << nodeBNumber << endl;
         return nodeBNumber;
     }
 };
 
 class Compositor : public Node {
 public:
+    // Переопределение стандартного поведения accept для автоматического посещения мемберов.
     MAKE_VISITABLE_CUSTOM({
         return pvisitor->visit(*this) + mLhs->accept(visitor) + mRhs->accept(visitor);
     })
@@ -46,6 +50,7 @@ public:
     }
 
     int number() const override {
+        cout << "A am Compositor. My number is " << compositorNumber << endl;
         return compositorNumber;
     }
 
@@ -55,6 +60,7 @@ private:
 
 class Tree : public Node {
 public:
+    // Переопределение стандартного поведения accept для автоматического посещения мемберов.
     MAKE_VISITABLE_CUSTOM({
         int total = pvisitor->visit(*this);
 
@@ -70,6 +76,7 @@ public:
     }
 
     int number() const override {
+        cout << "A am Tree. My number is " << treeNumber << endl;
         return treeNumber;
     }
 
@@ -77,52 +84,31 @@ private:
     vector<shared_ptr<Node>> mNodes;
 };
 
+//                                                     |Node| - тип перехватчик
 class MyVisitor : public BaseVisitor<VisitorTraits<int, Node>, Node, NodeA> {
 public:
+    // Перехватывает все непринятые типы, производные от Node
     int visit(Node &node) override {
         return node.number();
     }
 
+    // Специфичное поведжения для NodeA
     int visit(NodeA &node) override {
+        cout << "NodeA number in square" << endl;
         return node.number() * node.number();
     }
 };
 
-class TestVisitor : public ::testing::Test {
-protected:
+int main(int argc, char **argv) {
     MyVisitor visitor;
     shared_ptr<Node> nodeA = make_shared<NodeA>();
     shared_ptr<Node> nodeB = make_shared<NodeB>();
     shared_ptr<Node> compositor = make_shared<Compositor>(nodeA, nodeB);
-};
+    shared_ptr<Tree> ptree = make_shared<Tree>();
+    ptree->addNode(nodeA);
+    ptree->addNode(compositor);
+    ptree->addNode(nodeB);
 
-TEST_F(TestVisitor, TestInit) {
-    ASSERT_EQ(nodeA->number(), nodeANumber);
-    ASSERT_EQ(nodeB->number(), nodeBNumber);
-    ASSERT_EQ(compositor->number(), compositorNumber);
-}
-
-TEST_F(TestVisitor, TestVisit) {
-    ASSERT_EQ(nodeA->accept(visitor), nodeANumber * nodeANumber);
-    ASSERT_EQ(nodeB->accept(visitor), nodeBNumber);
-    ASSERT_EQ(compositor->accept(visitor),
-            compositorNumber + nodeANumber * nodeANumber + nodeBNumber);
-}
-
-TEST_F(TestVisitor, TestTree) {
-    auto tree = make_shared<Tree>();
-    tree->addNode(nodeA);
-    tree->addNode(nodeB);
-    tree->addNode(compositor);
-
-    shared_ptr<Node> btree = tree;
-
-    ASSERT_EQ(btree->accept(visitor),
-            treeNumber + nodeANumber * nodeANumber + nodeBNumber + nodeANumber * nodeANumber +
-                    nodeBNumber + compositorNumber);
-}
-
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    shared_ptr<Node> tree = ptree;
+    ptree->accept(visitor);
 }
